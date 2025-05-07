@@ -90,23 +90,23 @@ public class MyTupleServer {
             }
         }
 
-        //实现run方法，初步实现的很简单只有试试可否关闭就行。
+        //实现run方法
         public void run() {
             try {
-                //初始化in字段以准备读取客户端发送的文本数据（按行读）
-                //初始化out字段以准备向客户端发送文本响应
+                //为了获取socket的字节输出与输入，然后再继续读取与写入
                 in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
                 out = new PrintWriter(clientSocket.getOutputStream(), true);
                 String request;
-                //持续读取客户端的请求
-            while ((request = in.readLine()) != null) {
-                //使用synchronized锁定statsLock，确保线程安全
-                synchronized (statsLock) {
-                    totalOperations++;
-                }
-                // 临时响应，稍后实现 handleRequest
-                out.println("OK request received: " + request);
-                //clientSocket.close();
+                //持续循环读取客户端方式的请求
+                //逐行读取
+                while ((request = in.readLine()) != null) {
+                    //使用synchronized (statsLock)确保安全
+                    synchronized (statsLock) {
+                        totalOperations++;
+                    }
+                    //调用handleRequest方法处理请求并将响应发送给客户端
+                    String response = handleRequest(request);
+                    out.println(response);
                 }
             } catch (Exception e) {
                 System.out.println("Client error: " + e.getMessage());
@@ -114,15 +114,108 @@ public class MyTupleServer {
                     errorCount++;
                 }
             } finally {
-                //close
+                //仍然是为了关闭资源
                 try {
                     if (in != null) in.close();
                     if (out != null) out.close();
                     if (clientSocket != null) clientSocket.close();
-                }catch (Exception e) {
-                System.out.println("Error closing client!");
+                } catch (Exception e) {
+                    System.out.println("Error closing client!");
+                }
             }
         }
+    
+        //将handleRequest方法定义为负责解析客户端请求并执行相应的元组操作
+        private String handleRequest(String request) {
+            //按照要求验证请求长度是否至少为7个字符
+            if (request.length() < 7) {
+                synchronized (statsLock) {
+                    errorCount++;
+                }
+                return makeResponse("ERR invalid request");
+            }
+    
+            //对请求的前3个字符作为请求大小
+            int size;
+            try {
+                size = Integer.parseInt(request.substring(0, 3));
+            } catch (Exception e) {
+                synchronized (statsLock) {
+                    errorCount++;
+                }
+                return makeResponse("ERR invalid size");
+            }
+    
+            //检查请求的实际长度是否与声明的大小相匹配，不匹配则返回错误相应
+            if (request.length() != size) {
+                synchronized (statsLock) {
+                    errorCount++;
+                }
+                return makeResponse("ERR size mismatch");
+            }
+    
+            char command = request.charAt(4);
+            //解析命令后的内容再提取key和可选的value
+            String[] parts = request.substring(6).split(" ", 2);
+            String key = parts[0];
+            String value = parts.length > 1 ? parts[1] : "";
+    
+            //同步防止多个客户端线程同时修改tupleSpace
+            synchronized (tupleServer) {
+                //处理READ命令（R）并读取指定key的值
+                if (command == 'R') {
+                    synchronized (statsLock) {
+                        readCount++;
+                    }
+                    if (tupleServer.containsKey(key)) {
+                        String val = tupleServer.get(key);
+                        return makeResponse("OK (" + key + ", " + val + ") read");
+                    } else {
+                        synchronized (statsLock) {
+                            errorCount++;
+                        }
+                        return makeResponse("ERR " + key + " does not exist");
+                    }
+                } else if (command == 'G') {//处理GET命令（G）再获取并删除指定key的键值对
+                    synchronized (statsLock) {
+                        getCount++;
+                    }
+                    if (tupleServer.containsKey(key)) {
+                        String val = tupleServer.remove(key);
+                        return makeResponse("OK (" + key + ", " + val + ") removed");
+                    } else {
+                        synchronized (statsLock) {
+                            errorCount++;
+                        }
+                        return makeResponse("ERR " + key + " does not exist");
+                    }
+                } else if (command == 'P') {//处理命令（P），添加新的键值对
+                    synchronized (statsLock) {
+                        putCount++;
+                    }
+                    if (tupleServer.containsKey(key)) {//无效命令处理
+                        synchronized (statsLock) {
+                            errorCount++;
+                        }
+                        return makeResponse("ERR " + key + " already exists");
+                    } else {
+                        tupleServer.put(key, value);
+                        return makeResponse("OK (" + key + ", " + value + ") added");
+                    }
+                } else {
+                    synchronized (statsLock) {
+                        errorCount++;
+                    }
+                    return makeResponse("ERR invalid command");
+                }
+            }
+        }
+    
+        //格式化响应字符串
+        private String makeResponse(String message) {
+            int length = message.length();
+            //从而添加3位长度前缀
+            return String.format("%03d %s", length, message);
+        }
     }
-}
 }
