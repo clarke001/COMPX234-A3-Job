@@ -1,4 +1,8 @@
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
 import java.net.*;
+import java.nio.Buffer;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -6,14 +10,14 @@ import java.util.Map;
 public class MyTupleServer {
     //对服务器允许的最小和最大端口号常量进行设定。
     //定义多个变量计数器，来限制并跟踪服务器的运行情况（当然部分的变量目前我还没有使用并确定其具体的属性）
-    private Map<String , String> tupleServer = new HashMap<>();
-    private int totalClients = 0;
-    private int totalOperations = 0;
-    private int readCount = 0;
-    private int getCount = 0;
-    private int putCount = 0;
-    private int errorCount = 0;
-    private Object statsLock = new Object();
+    private static Map<String , String> tupleServer = new HashMap<>();
+    private static int totalClients = 0;
+    private static int totalOperations = 0;
+    private static int readCount = 0;
+    private static int getCount = 0;
+    private static int putCount = 0;
+    private static int errorCount = 0;
+    private static Object statsLock = new Object();
     private static final int MIN_PORT = 50000;
     private static final int MAX_PORT = 59999;
 
@@ -72,6 +76,8 @@ public class MyTupleServer {
     //再定义一个静态内部类ClientHandler来实现Runnable接口
     private static class ClientHandler implements Runnable {
         private Socket clientSocket;  //变量用于存储与客户端的连接
+        private BufferedReader in;
+        private PrintWriter out;
 
         
         //构造方法并初始化ClientHandler
@@ -87,10 +93,36 @@ public class MyTupleServer {
         //实现run方法，初步实现的很简单只有试试可否关闭就行。
         public void run() {
             try {
-                clientSocket.close();
+                //初始化in字段以准备读取客户端发送的文本数据（按行读）
+                //初始化out字段以准备向客户端发送文本响应
+                in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+                out = new PrintWriter(clientSocket.getOutputStream(), true);
+                String request;
+                //持续读取客户端的请求
+            while ((request = in.readLine()) != null) {
+                //使用synchronized锁定statsLock，确保线程安全
+                synchronized (statsLock) {
+                    totalOperations++;
+                }
+                // 临时响应，稍后实现 handleRequest
+                out.println("OK request received: " + request);
+                //clientSocket.close();
+                }
             } catch (Exception e) {
+                System.out.println("Client error: " + e.getMessage());
+                synchronized (statsLock) {
+                    errorCount++;
+                }
+            } finally {
+                //close
+                try {
+                    if (in != null) in.close();
+                    if (out != null) out.close();
+                    if (clientSocket != null) clientSocket.close();
+                }catch (Exception e) {
                 System.out.println("Error closing client!");
             }
         }
     }
+}
 }
