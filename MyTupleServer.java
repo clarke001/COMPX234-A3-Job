@@ -21,6 +21,9 @@ public class MyTupleServer {
     private static final int MIN_PORT = 50000;
     private static final int MAX_PORT = 59999;
 
+
+    //十秒为一次间隔打印数据
+    private static final int STATS_INTERVAL = 10000;
     //程序的主方法
     public static void main(String[] args) {
 
@@ -43,6 +46,22 @@ public class MyTupleServer {
             System.out.println("Invalid port number!");
             return;
         }
+
+        //创建并初始化一个新的线程对象用于定时打印统计信息
+        Thread statsThread = new Thread(new Runnable() {
+            public void run() {
+                while (true) {
+                    printStats();//调用printStats()方法
+                    try {
+                        Thread.sleep(STATS_INTERVAL);
+                    } catch (Exception e) {
+                        System.out.println("Stats thread error!");
+                    }
+                }
+            }
+        });
+        statsThread.start();//启动统计线程
+
         //声明一个初始值为NULL的ServerSocket变量
         ServerSocket serverSocket = null;
         //尝试在指定的窗口创建并连接serverSocket
@@ -72,6 +91,47 @@ public class MyTupleServer {
         }
     }
 
+    //创建printStats方法
+    private static void printStats(){
+        //上锁确保安全
+        synchronized (tupleServer) {
+            //获取元组空间中的元组数量
+            int numTuples = tupleServer.size();
+            double avgTupleSize = 0.0;
+            double avgKeySize = 0.0;
+            double avgValueSize = 0.0;
+    
+            //检查是否为空
+            if (numTuples > 0) {
+                int totalKeySize = 0;
+                int totalValueSize = 0;
+                //遍历元组空间中的所有键
+                for (String key : tupleServer.keySet()) {
+                    totalKeySize += key.length();
+                    totalValueSize += tupleServer.get(key).length();//累加当前键对应值的字符长度
+                }
+                //计算平均值
+                avgKeySize = (double) totalKeySize / numTuples;
+                avgValueSize = (double) totalValueSize / numTuples;
+                avgTupleSize = avgKeySize + avgValueSize;
+            }
+    
+            //Print relevant calculation information
+            synchronized (statsLock) {
+                System.out.println("\n--- Tuple Space Stats ---");
+                System.out.println("Number of Tuples: " + numTuples);
+                System.out.println("Average Tuple Size: " + avgTupleSize);
+                System.out.println("Average Key Size: " + avgKeySize);
+                System.out.println("Average Value Size: " + avgValueSize);
+                System.out.println("Total Clients: " + totalClients);
+                System.out.println("Total Operations: " + totalOperations);
+                System.out.println("READs: " + readCount);
+                System.out.println("GETs: " + getCount);
+                System.out.println("PUTs: " + putCount);
+                System.out.println("Errors: " + errorCount);
+            }
+        }
+    }
 
     //再定义一个静态内部类ClientHandler来实现Runnable接口
     private static class ClientHandler implements Runnable {
