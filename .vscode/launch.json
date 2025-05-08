@@ -1,0 +1,29 @@
+{
+    // 使用 IntelliSense 了解相关属性。 
+    // 悬停以查看现有属性的描述。
+    // 欲了解更多信息，请访问: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Current File",
+            "request": "launch",
+            "mainClass": "${file}",
+            "console": "externalTerminal"
+        },
+        {
+            "type": "java",
+            "name": "MyTupleServer",
+            "request": "launch",
+            "mainClass": "MyTupleServer",
+            "projectName": "COMPX234-A3-Job_4769f9c3"
+        },
+        {
+            "type": "java",
+            "name": "TupleClient",
+            "request": "launch",
+            "mainClass": "TupleClient",
+            "projectName": "COMPX234-A3-Job_4769f9c3"
+        }
+    ]
+}

@@ -5,10 +5,11 @@ import java.net.*;
 import java.util.HashMap;
 import java.util.Map;
 
-//定义了一个名为 TupleSpaceServer的公共类，其为程序的主类。
+//定义了一个名为 TupleSpaceServer的公共类，其为程序的主类。(A public class named TupleSpaceServer is defined as the main class of the program)
 public class MyTupleServer {
-    //对服务器允许的最小和最大端口号常量进行设定。
+    //对服务器允许的最小和最大端口号常量进行设定。(Set the minimum and maximum port number constants allowed by the server.)
     //定义多个变量计数器，来限制并跟踪服务器的运行情况（当然部分的变量目前我还没有使用并确定其具体的属性）
+    //Define multiple variable counters to limit and track the server's performance
     private static Map<String , String> tupleServer = new HashMap<>();
     private static int totalClients = 0;
     private static int totalOperations = 0;
@@ -19,18 +20,19 @@ public class MyTupleServer {
     private static Object statsLock = new Object();
     private static final int MIN_PORT = 50000;
     private static final int MAX_PORT = 59999;
-    //定义键和值的最大长度
+    //定义键和值的最大长度(Define the maximum length of keys and values)
     private static final int MAX_KEY_VALUE_LENGTH = 999;
-    //定义元组（键+值）的最大可行大小
+    //定义元组（键+值）的最大可行大小 (Define the maximum feasible size of a tuple (key + value))
     private static final int MAX_TUPLE_SIZE = 970;
 
 
-    //十秒为一次间隔打印数据
+    //十秒为一次间隔打印数据(Print data at intervals of 10 seconds)
     private static final int STATS_INTERVAL = 10000;
     //程序的主方法
     public static void main(String[] args) {
 
         //检查命令行是否提供了一个合适的参数（端口号），若不是（即参数不是1）则打印错误信息。
+        //Check that the command line provides a proper parameter (port number). If not (that is, the parameter is not 1), print an error message.
         if (args.length != 1) {
             System.out.println("Please give a port number!");
             return;
@@ -50,7 +52,7 @@ public class MyTupleServer {
             return;
         }
 
-        //创建并初始化一个新的线程对象用于定时打印统计信息
+        //创建并初始化一个新的线程对象用于定时打印统计信息(Create and initialize a new thread object for periodically printing statistics)
         Thread statsThread = new Thread(new Runnable() {
             public void run() {
                 while (true) {
@@ -65,21 +67,21 @@ public class MyTupleServer {
         });
         statsThread.start();//启动统计线程
 
-        //声明一个初始值为NULL的ServerSocket变量
+        //声明一个初始值为NULL的ServerSocket变量(Declare a ServerSocket variable with an initial value of NULL)
         ServerSocket serverSocket = null;
-        //尝试在指定的窗口创建并连接serverSocket
-        //serverSocket可能会抛出异常所以使用try...catch进行捕获
+        //尝试在指定的窗口创建并连接serverSocket(Try to create and connect the serverSocket in the specified window)
+        //serverSocket可能会抛出异常所以使用try...catch进行捕获(serverSocket May throw an exception so use try...catch catch it)
         try {
             serverSocket = new ServerSocket(port);
             System.out.println("Server started on port " + port);
-            //添加了while会使进程进入无限循环并等待客户端连接。
+            //添加了while会使进程进入无限循环并等待客户端连接。(Adding while causes the process to enter an infinite loop and wait for the client to connect.)
             while (true) {
                 Socket clientSocket = serverSocket.accept();
                 System.out.println("New client: " + clientSocket.getInetAddress());
-                //为每个客户端创建并启动一个新线程（允许服务器并发处理多个独立的客户端）
-                //创建了ClientHandler对象和clientThead对象
+                //为每个客户端创建并启动一个新线程（允许服务器并发处理多个独立的客户端）  (Create and start a new thread for each client (allows the server to process multiple independent clients concurrently))
+                //(创建了ClientHandler对象和clientThead对象)
                 Thread clientThread = new Thread(new ClientHandler(clientSocket));
-                clientThread.start();//调用了start（）方法启动线程
+                clientThread.start();//调用了start（）方法启动线程(The start() method is called to start the thread)
             }
         } catch (Exception e) {
             System.out.println("Server error: " + e.getMessage());
@@ -94,24 +96,24 @@ public class MyTupleServer {
         }
     }
 
-    //创建printStats方法
+    //创建printStats方法(Create the printStats method)
     private static void printStats(){
-        //上锁确保安全
+        //上锁确保安全(Locking ensures safety)
         synchronized (tupleServer) {
-            //获取元组空间中的元组数量
+            //获取元组空间中的元组数量(Returns the number of tuples in the tuple space)
             int numTuples = tupleServer.size();
             double avgTupleSize = 0.0;
             double avgKeySize = 0.0;
             double avgValueSize = 0.0;
     
-            //检查是否为空
+            //检查是否为空(Check if it empty)
             if (numTuples > 0) {
                 int totalKeySize = 0;
                 int totalValueSize = 0;
-                //遍历元组空间中的所有键
+                //遍历元组空间中的所有键(Traverse all keys in the tuple space)
                 for (String key : tupleServer.keySet()) {
                     totalKeySize += key.length();
-                    totalValueSize += tupleServer.get(key).length();//累加当前键对应值的字符长度
+                    totalValueSize += tupleServer.get(key).length();//累加当前键对应值的字符长度(Add the character length corresponding to the current key)
                 }
                 //计算平均值
                 avgKeySize = (double) totalKeySize / numTuples;
@@ -136,7 +138,7 @@ public class MyTupleServer {
         }
     }
 
-    //再定义一个静态内部类ClientHandler来实现Runnable接口
+    //再定义一个静态内部类ClientHandler来实现Runnable接口(Define a static inner class ClientHandler to implement the Runnable interface)
     private static class ClientHandler implements Runnable {
         private Socket clientSocket;  //变量用于存储与客户端的连接
         private BufferedReader in;
@@ -146,8 +148,8 @@ public class MyTupleServer {
         //构造方法并初始化ClientHandler
         public ClientHandler(Socket socket) {
             this.clientSocket = socket;
-            //原本是想使用synchronized以statsLock为锁，再不断累加totalClients计数器来确保线程安全的
-            //但是不知道为什么Statslock和totalClients++都报错了
+            //原本是想使用synchronized以statsLock为锁，再不断累加totalClients计数器来确保线程安全的(Originally, I wanted to use synchronized with statsLock as the lock and continuously accumulate the totalClients counter to ensure thread safety)
+            //但是不知道为什么Statslock和totalClients++都报错了(But I don't know why both Statslock and totalClients++ are wrong)
             synchronized (statsLock) {
                 totalClients++;
             }
@@ -156,7 +158,7 @@ public class MyTupleServer {
         //实现run方法
         public void run() {
             try {
-                //为了获取socket的字节输出与输入，然后再继续读取与写入
+                //为了获取socket的字节输出与输入，然后再继续读取与写入(To obtain the byte output and input of socket, read and write on)
                 in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
                 out = new PrintWriter(clientSocket.getOutputStream(), true);
                 String request;
@@ -193,9 +195,10 @@ public class MyTupleServer {
 
         
     
-        //将handleRequest方法定义为负责解析客户端请求并执行相应的元组操作
+        //将handleRequest方法定义为负责解析客户端请求并执行相应的元组操作(The handleRequest method is defined to parse client requests and perform the corresponding tuple operations)
         private String handleRequest(String request) {
             //按照要求验证请求长度是否至少为7个字符,还有前三个字符是否为数字（会提取前三个字符）
+            //Verify that the request length is at least 7 characters as required, and that the first three characters are numeric (the first three characters will be extracted)
             if (request.length() < 7 || !isNumber(request.substring(0,3))) {
                 synchronized (statsLock) {
                     errorCount++;
@@ -203,7 +206,7 @@ public class MyTupleServer {
                 return makeResponse("ERR invalid request");
             }
     
-            //对请求的前3个字符作为请求大小并尝试解析
+            //对请求的前3个字符作为请求大小并尝试解析(Take the first three characters of the request as the size of the request and try to parse it)
             int size;
             try {
                 size = Integer.parseInt(request.substring(0, 3));
@@ -214,7 +217,7 @@ public class MyTupleServer {
                 return makeResponse("ERR invalid size");
             }
     
-            //检查请求的实际长度是否与声明的大小相匹配，不匹配则返回错误相应
+            //检查请求的实际长度是否与声明的大小相匹配，不匹配则返回错误相应(Check whether the actual length of the request matches the declared size, and return an error response if they do not match)
             if (request.length() != size || request.charAt(3) != ' ' || request.charAt(5) != ' ') {
                 synchronized (statsLock) {
                     errorCount++;
@@ -229,7 +232,7 @@ public class MyTupleServer {
             String value = parts.length > 1 ? parts[1] : "";
     
 
-            //调用isPrintable方法和isEmpty()方法检查key和value是否包含非可打印字符
+            //调用isPrintable方法和isEmpty()方法检查key和value是否包含非可打印字符(Call the isPrintable method and the isEmpty() method to check whether the key and value contain non-printable characters)
             if (!isPrintable(key) ||(!value.isEmpty()&&!isPrintable(value))) {
                 synchronized(statsLock){
                     errorCount++;
@@ -304,9 +307,9 @@ public class MyTupleServer {
         }
     
 
-        //定义一个名为isPrintable 的私有方法
+        //定义一个名为isPrintable 的私有方法(Define a private method called isPrintable)
         private boolean isPrintable(String str) {
-            //使用增强型for循环（foreach）遍历字符串str的每个字符
+            //使用增强型for循环（foreach）遍历字符串str的每个字符(Use the enhanced for loop (foreach) to traverse each character of the string str)
             for (char c : str.toCharArray()) {
                 //检查当前字符是否可以打印
                 if (c < 32 || c > 126) {
@@ -317,9 +320,9 @@ public class MyTupleServer {
             return true;
         }
 
-        //定义一个私有方法isNumber用来检查输入字符串是否只包含数字字符
+        //定义一个私有方法isNumber用来检查输入字符串是否只包含数字字符(Define a private method isNumber to check whether the input string contains only numeric characters)
         private boolean isNumber(String str) {
-            //遍历每一个字符并逐个检查
+            //遍历每一个字符并逐个检查(Go through each character and check it one by one)
             for (char c : str.toCharArray()) {
                 if (c < '0' || c > '9') {
                     return false;
@@ -331,7 +334,7 @@ public class MyTupleServer {
         //格式化响应字符串
         private String makeResponse(String message) {
             int length = message.length();
-            //从而添加3位长度前缀
+            //从而添加3位长度前缀(Thus, a 3-bit prefix is added)
             return String.format("%03d %s", length, message);
         }
     }
