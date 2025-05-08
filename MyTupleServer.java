@@ -7,9 +7,6 @@ import java.util.Map;
 
 //定义了一个名为 TupleSpaceServer的公共类，其为程序的主类。(A public class named TupleSpaceServer is defined as the main class of the program)
 public class MyTupleServer {
-    //对服务器允许的最小和最大端口号常量进行设定。(Set the minimum and maximum port number constants allowed by the server.)
-    //定义多个变量计数器，来限制并跟踪服务器的运行情况（当然部分的变量目前我还没有使用并确定其具体的属性）
-    //Define multiple variable counters to limit and track the server's performance
     private static Map<String , String> tupleServer = new HashMap<>();
     private static int totalClients = 0;
     private static int totalOperations = 0;
@@ -20,29 +17,20 @@ public class MyTupleServer {
     private static Object statsLock = new Object();
     private static final int MIN_PORT = 50000;
     private static final int MAX_PORT = 59999;
-    //定义键和值的最大长度(Define the maximum length of keys and values)
     private static final int MAX_KEY_VALUE_LENGTH = 999;
-    //定义元组（键+值）的最大可行大小 (Define the maximum feasible size of a tuple (key + value))
     private static final int MAX_TUPLE_SIZE = 970;
-
-
-    //十秒为一次间隔打印数据(Print data at intervals of 10 seconds)
     private static final int STATS_INTERVAL = 10000;
-    //程序的主方法
+    
     public static void main(String[] args) {
 
-        //检查命令行是否提供了一个合适的参数（端口号），若不是（即参数不是1）则打印错误信息。
-        //Check that the command line provides a proper parameter (port number). If not (that is, the parameter is not 1), print an error message.
         if (args.length != 1) {
             System.out.println("Please give a port number!");
             return;
         }
 
-        int port;  //试将第一个命令行参数转换为整数以作为端口号
+        int port; 
         try {
-            //使用try...catch是因为parseInt会抛出错误。
             port = Integer.parseInt(args[0]);
-            //验证端口的范围是否合规
             if (port < MIN_PORT || port > MAX_PORT) {
                 System.out.println("Port must be between 50000 and 59999!");
                 return;
@@ -52,11 +40,11 @@ public class MyTupleServer {
             return;
         }
 
-        //创建并初始化一个新的线程对象用于定时打印统计信息(Create and initialize a new thread object for periodically printing statistics)
+        //I will create and initialize a new thread object for periodically printing statistics)
         Thread statsThread = new Thread(new Runnable() {
             public void run() {
                 while (true) {
-                    printStats();//调用printStats()方法
+                    printStats();
                     try {
                         Thread.sleep(STATS_INTERVAL);
                     } catch (Exception e) {
@@ -65,23 +53,17 @@ public class MyTupleServer {
                 }
             }
         });
-        statsThread.start();//启动统计线程
+        statsThread.start();
 
-        //声明一个初始值为NULL的ServerSocket变量(Declare a ServerSocket variable with an initial value of NULL)
         ServerSocket serverSocket = null;
-        //尝试在指定的窗口创建并连接serverSocket(Try to create and connect the serverSocket in the specified window)
-        //serverSocket可能会抛出异常所以使用try...catch进行捕获(serverSocket May throw an exception so use try...catch catch it)
         try {
             serverSocket = new ServerSocket(port);
             System.out.println("Server started on port " + port);
-            //添加了while会使进程进入无限循环并等待客户端连接。(Adding while causes the process to enter an infinite loop and wait for the client to connect.)
             while (true) {
                 Socket clientSocket = serverSocket.accept();
                 System.out.println("New client: " + clientSocket.getInetAddress());
-                //为每个客户端创建并启动一个新线程（允许服务器并发处理多个独立的客户端）  (Create and start a new thread for each client (allows the server to process multiple independent clients concurrently))
-                //(创建了ClientHandler对象和clientThead对象)
                 Thread clientThread = new Thread(new ClientHandler(clientSocket));
-                clientThread.start();//调用了start（）方法启动线程(The start() method is called to start the thread)
+                clientThread.start();
             }
         } catch (Exception e) {
             System.out.println("Server error: " + e.getMessage());
@@ -98,24 +80,19 @@ public class MyTupleServer {
 
     //创建printStats方法(Create the printStats method)
     private static void printStats(){
-        //上锁确保安全(Locking ensures safety)
         synchronized (tupleServer) {
-            //获取元组空间中的元组数量(Returns the number of tuples in the tuple space)
             int numTuples = tupleServer.size();
             double avgTupleSize = 0.0;
             double avgKeySize = 0.0;
             double avgValueSize = 0.0;
     
-            //检查是否为空(Check if it empty)
             if (numTuples > 0) {
                 int totalKeySize = 0;
                 int totalValueSize = 0;
-                //遍历元组空间中的所有键(Traverse all keys in the tuple space)
                 for (String key : tupleServer.keySet()) {
                     totalKeySize += key.length();
-                    totalValueSize += tupleServer.get(key).length();//累加当前键对应值的字符长度(Add the character length corresponding to the current key)
+                    totalValueSize += tupleServer.get(key).length();
                 }
-                //计算平均值
                 avgKeySize = (double) totalKeySize / numTuples;
                 avgValueSize = (double) totalValueSize / numTuples;
                 avgTupleSize = avgKeySize + avgValueSize;
@@ -140,7 +117,7 @@ public class MyTupleServer {
 
     //再定义一个静态内部类ClientHandler来实现Runnable接口(Define a static inner class ClientHandler to implement the Runnable interface)
     private static class ClientHandler implements Runnable {
-        private Socket clientSocket;  //变量用于存储与客户端的连接
+        private Socket clientSocket;  
         private BufferedReader in;
         private PrintWriter out;
 
@@ -148,7 +125,8 @@ public class MyTupleServer {
         //构造方法并初始化ClientHandler
         public ClientHandler(Socket socket) {
             this.clientSocket = socket;
-            //原本是想使用synchronized以statsLock为锁，再不断累加totalClients计数器来确保线程安全的(Originally, I wanted to use synchronized with statsLock as the lock and continuously accumulate the totalClients counter to ensure thread safety)
+            //原本是想使用synchronized以statsLock为锁，再不断累加totalClients计数器来确保线程安全的
+            //(Originally, I wanted to use synchronized with statsLock as the lock and continuously accumulate the totalClients counter to ensure thread safety)
             //但是不知道为什么Statslock和totalClients++都报错了(But I don't know why both Statslock and totalClients++ are wrong)
             synchronized (statsLock) {
                 totalClients++;
@@ -158,18 +136,13 @@ public class MyTupleServer {
         //实现run方法
         public void run() {
             try {
-                //为了获取socket的字节输出与输入，然后再继续读取与写入(To obtain the byte output and input of socket, read and write on)
                 in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
                 out = new PrintWriter(clientSocket.getOutputStream(), true);
                 String request;
-                //持续循环读取客户端方式的请求
-                //逐行读取
                 while ((request = in.readLine()) != null) {
-                    //使用synchronized (statsLock)确保安全
                     synchronized (statsLock) {
                         totalOperations++;
                     }
-                    //调用handleRequest方法处理请求并将响应发送给客户端
                     String response = handleRequest(request);
                     out.println(response);
                 }
@@ -179,7 +152,6 @@ public class MyTupleServer {
                     errorCount++;
                 }
             } finally {
-                //仍然是为了关闭资源
                 try {
                     if (in != null) in.close();
                     if (out != null) out.close();
@@ -240,9 +212,7 @@ public class MyTupleServer {
                 return makeResponse("ERR non-printable characters");
                 
             }
-            //同步防止多个客户端线程同时修改tupleSpace
             synchronized (tupleServer) {
-                //处理READ命令（R）并读取指定key的值
                 if (command == 'R') {
                     synchronized (statsLock) {
                         readCount++;
@@ -270,18 +240,15 @@ public class MyTupleServer {
                         return makeResponse("ERR " + key + " does not exist");
                     }
                 } else if (command == 'P') {//处理命令（P），添加新的键值对（操作分支）
-                    //上锁确保安全
                     synchronized (statsLock) {
                         putCount++;//记录次数
                     }
-                    //检查键或值的长度有没有超过最大限制
                     if(key.length() > MAX_KEY_VALUE_LENGTH || value.length() > MAX_KEY_VALUE_LENGTH){
                         synchronized(statsLock){
                             errorCount++;//记录错误发生次数
                         }
                         return makeResponse("ERR key or value too long");
                     }
-                    //检查元组大小（键+值+分隔符）是否超过最大限制
                     if (key.length() + value.length() + 1 > MAX_TUPLE_SIZE) {
                         synchronized (statsLock) {
                             errorCount++;//再次自增 errorCount用来记录元组太大的错误
@@ -311,7 +278,6 @@ public class MyTupleServer {
         private boolean isPrintable(String str) {
             //使用增强型for循环（foreach）遍历字符串str的每个字符(Use the enhanced for loop (foreach) to traverse each character of the string str)
             for (char c : str.toCharArray()) {
-                //检查当前字符是否可以打印
                 if (c < 32 || c > 126) {
         
                     return false;
