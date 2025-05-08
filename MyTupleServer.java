@@ -229,6 +229,15 @@ public class MyTupleServer {
             String key = parts[0];
             String value = parts.length > 1 ? parts[1] : "";
     
+
+            //调用isPrintable方法和isEmpty()方法检查key和value是否包含非可打印字符
+            if (!isPrintable(key) ||(!value.isEmpty()&&!isPrintable(value))) {
+                synchronized(statsLock){
+                    errorCount++;
+                }
+                return makeResponse("ERR non-printable characters");
+                
+            }
             //同步防止多个客户端线程同时修改tupleSpace
             synchronized (tupleServer) {
                 //处理READ命令（R）并读取指定key的值
@@ -293,6 +302,20 @@ public class MyTupleServer {
                     return makeResponse("ERR invalid command");
                 }
             }
+        }
+    
+
+        //定义一个名为isPrintable 的私有方法
+        private boolean isPrintable(String str) {
+            //使用增强型for循环（foreach）遍历字符串str的每个字符
+            for (char c : str.toCharArray()) {
+                //检查当前字符是否可以打印
+                if (c < 32 || c > 126) {
+        
+                    return false;
+                }
+            }
+            return true;
         }
     
         //格式化响应字符串

@@ -104,6 +104,9 @@ public class TupleClient {
                 if (!operation.equals("PUT") && !operation.equals("READ") && !operation.equals("GET")) {
                     return line + ": ERR bad operation";
                 }
+                if (!isPrintable(key) || (!value.isEmpty() && !isPrintable(value))) {
+                    return line + ": ERR non-printable characters";
+                }
             
                 String message;///局部变量，用来储存创建的服务器信息(A local variable that stores the created server information)
                 //三种操作的对应格式
@@ -117,7 +120,8 @@ public class TupleClient {
                         return line + ":ERR tuple too large";
 
                     }
-                    message = "P " + key + " " + value;
+               
+                message = "P " + key + " " + value;
                 } else if (operation.equals("READ")) {
                     message = "R " + key;
                 } else {
@@ -139,6 +143,13 @@ public class TupleClient {
                 } catch (Exception e) {
                     return line + ": ERR can't talk to server";
                 }
-            
-        }
+            }
+            private static boolean isPrintable(String str) {
+                for (char c : str.toCharArray()) {
+                    if (c < 32 || c > 126) {
+                        return false;
+                    }
+                }
+                return true;
+            }
     }
