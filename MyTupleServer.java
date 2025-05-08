@@ -2,7 +2,6 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.*;
-import java.nio.Buffer;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -196,15 +195,15 @@ public class MyTupleServer {
     
         //将handleRequest方法定义为负责解析客户端请求并执行相应的元组操作
         private String handleRequest(String request) {
-            //按照要求验证请求长度是否至少为7个字符
-            if (request.length() < 7) {
+            //按照要求验证请求长度是否至少为7个字符,还有前三个字符是否为数字（会提取前三个字符）
+            if (request.length() < 7 || !isNumber(request.substring(0,3))) {
                 synchronized (statsLock) {
                     errorCount++;
                 }
                 return makeResponse("ERR invalid request");
             }
     
-            //对请求的前3个字符作为请求大小
+            //对请求的前3个字符作为请求大小并尝试解析
             int size;
             try {
                 size = Integer.parseInt(request.substring(0, 3));
@@ -216,7 +215,7 @@ public class MyTupleServer {
             }
     
             //检查请求的实际长度是否与声明的大小相匹配，不匹配则返回错误相应
-            if (request.length() != size) {
+            if (request.length() != size || request.charAt(3) != ' ' || request.charAt(5) != ' ') {
                 synchronized (statsLock) {
                     errorCount++;
                 }
@@ -312,6 +311,17 @@ public class MyTupleServer {
                 //检查当前字符是否可以打印
                 if (c < 32 || c > 126) {
         
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        //定义一个私有方法isNumber用来检查输入字符串是否只包含数字字符
+        private boolean isNumber(String str) {
+            //遍历每一个字符并逐个检查
+            for (char c : str.toCharArray()) {
+                if (c < '0' || c > '9') {
                     return false;
                 }
             }

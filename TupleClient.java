@@ -4,7 +4,6 @@ import java.io.FileReader;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.*;
-import java.security.Key;
 
 //定义一个名为TupleClient的公共类。可使用socket连接到服务器。（Define a public class called TupleClient. You can use a socket to connect to the server.）
 public class TupleClient {
@@ -140,10 +139,14 @@ public class TupleClient {
                         return line + ": ERR server gone";
                     }
                     return line + ": " + response.substring(4);
-                } catch (Exception e) {
+                } catch(SocketTimeoutException e){
+                    return line + ": ERR server timeout";
+                }catch (Exception e) {
                     return line + ": ERR can't talk to server";
                 }
             }
+
+            //定义一个名为isprintable的私有类
             private static boolean isPrintable(String str) {
                 for (char c : str.toCharArray()) {
                     if (c < 32 || c > 126) {
