@@ -20,6 +20,10 @@ public class MyTupleServer {
     private static Object statsLock = new Object();
     private static final int MIN_PORT = 50000;
     private static final int MAX_PORT = 59999;
+    //定义键和值的最大长度
+    private static final int MAX_KEY_VALUE_LENGTH = 999;
+    //定义元组（键+值）的最大可行大小
+    private static final int MAX_TUPLE_SIZE = 970;
 
 
     //十秒为一次间隔打印数据
@@ -184,6 +188,11 @@ public class MyTupleServer {
                 }
             }
         }
+
+
+
+
+        
     
         //将handleRequest方法定义为负责解析客户端请求并执行相应的元组操作
         private String handleRequest(String request) {
@@ -249,11 +258,26 @@ public class MyTupleServer {
                         }
                         return makeResponse("ERR " + key + " does not exist");
                     }
-                } else if (command == 'P') {//处理命令（P），添加新的键值对
+                } else if (command == 'P') {//处理命令（P），添加新的键值对（操作分支）
+                    //上锁确保安全
                     synchronized (statsLock) {
-                        putCount++;
+                        putCount++;//记录次数
                     }
-                    if (tupleServer.containsKey(key)) {//无效命令处理
+                    //检查键或值的长度有没有超过最大限制
+                    if(key.length() > MAX_KEY_VALUE_LENGTH || value.length() > MAX_KEY_VALUE_LENGTH){
+                        synchronized(statsLock){
+                            errorCount++;//记录错误发生次数
+                        }
+                        return makeResponse("ERR key or value too long");
+                    }
+                    //检查元组大小（键+值+分隔符）是否超过最大限制
+                    if (key.length() + value.length() + 1 > MAX_TUPLE_SIZE) {
+                        synchronized (statsLock) {
+                            errorCount++;//再次自增 errorCount用来记录元组太大的错误
+                        }
+                        return makeResponse("ERR tuple too large");
+                    }
+                    if (tupleServer.containsKey(key)) {//无效命令处理，检测键是否已经存在于元组空间
                         synchronized (statsLock) {
                             errorCount++;
                         }

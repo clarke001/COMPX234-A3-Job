@@ -4,6 +4,7 @@ import java.io.FileReader;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.*;
+import java.security.Key;
 
 //定义一个名为TupleClient的公共类。可使用socket连接到服务器。（Define a public class called TupleClient. You can use a socket to connect to the server.）
 public class TupleClient {
@@ -81,6 +82,8 @@ public class TupleClient {
 
         }
 
+        private static final int MAX_KEY_VALUE_LENGTH = 999;
+        private static final int MAX_TUPLE_SIZE = 970;
 
         //ProcessRequest方法的构建(ProcessRequest Construction of the method)
             private static String processRequest(String line, PrintWriter out, BufferedReader in) {
@@ -105,6 +108,15 @@ public class TupleClient {
                 String message;///局部变量，用来储存创建的服务器信息(A local variable that stores the created server information)
                 //三种操作的对应格式
                 if (operation.equals("PUT")) {
+                    //检查键或值的长度是否超过最大限制
+                    if (key.length() > MAX_KEY_VALUE_LENGTH || value.length() >MAX_KEY_VALUE_LENGTH){
+                        return line + ": ERR key or value too long";
+                    }
+                    //检查元组大小（键+值+分隔符）是否超过最大限制
+                    if (key.length() + value.length() + 1 > MAX_KEY_VALUE_LENGTH){
+                        return line + ":ERR tuple too large";
+
+                    }
                     message = "P " + key + " " + value;
                 } else if (operation.equals("READ")) {
                     message = "R " + key;
